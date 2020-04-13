@@ -12,40 +12,6 @@
     <!-- use local d3.js script file -->
     <script src="d3/d3.min.js"></script> 
 
-    <p>Hello</p>
-    <p>World!</p>
-    <p>Test</p>
-    <p>d3.js</p>
-
-    <script type="text/javascript">
-        
-        d3.selectAll("p").style("color", function() {
-            return "hsl(" + Math.random() * 360 + ",100%,50%)";
-        }).text("hahahaha");
-
-    </script>
-
-
-    <script type="text/javascript">
-        var redVal=0;
-        var greenVal=0;
-        var blueVal=0;
-        function changeCol(evt)
-        {
-            var targetshape = evt.target;
-            redVal = Math.round(Math.random()*255);
-            greenVal = Math.round(Math.random()*255);
-            blueVal = Math.round(Math.random()*255);
-            targetshape.setAttribute("fill", "rgb(" + redVal + "," + greenVal + "," + blueVal + ")");
-        
-        }
-    </script>
-    
-    <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
-        <circle cx="100" cy="50" r="40" stroke="black" stroke-width="2" fill="red" onclick="changeCol(evt)"/>
-        <ellipse cx="300" cy="80" rx="100" ry="50"style="fill:yellow;stroke:purple;stroke-width:2"/>
-    </svg>
-
     <div id="canvas"></div>
 
     <table>
@@ -61,36 +27,88 @@
 
     <script type="text/javascript">
 
-        // function to visualize
-        function f(x, y){
+        // quandratic bowl function
+        function quad_bowl(x, y){
             var a = 3, b = 5, c = 0.1, d = 0.4;
             return x * x + y * y - a * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
             return Math.sqrt(x * x + y * y);
         }
 
-        // gradient of function f
-        function f_grad(x, y){
+        // gradient of quandratic bowl function 
+        function quad_bowl_grad(x, y){
             var a = 3, b = 5, c = 0.1, d = 0.4;
             var px = 2 * x - a * (-2 / c * (x - 1)) * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * (-2 / d * (x + 1)) * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
             var py = 2 * y - a * (-2 / c * y) * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * (-2 / d * y) * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
             return [px, py];
         }
 
+        // the function in tutorial 7
+        function t7f(x, y){
+            var gamma = 2;
+            return 0.5 * (x * x + 2 * y * y);
+        }
+
+        // gradient of the function in tutorial 7
+        function t7f_grad(x, y){
+            var gamma = 2;
+            return [x, gamma * y];
+        }
+
+        // function to visualize and optimize
+        var f = t7f;
+        var f_grad = t7f_grad;
+
         // steepest descent method
         function steepest_descent(x, y){
+            var gamma = 2;
+            var epsilon = 0.0001;
+            var maxiter = 1000;
+            var numiter = 1;
             var curx = x, cury = y;
-            while (true) {
+            var f_prev = f(curx, cury);
+            var traj = new Array();
+            traj.push([curx, cury]);
+            while (numiter < maxiter) {
                 var gradient = f_grad(curx, cury);
-                var deltax = gradient[0];
-                var deltay = gradient[1];
-                
+                var deltax = -gradient[0];
+                var deltay = -gradient[1];
+                var t = (curx * curx + gamma * gamma * y * y) / (curx * curx + gamma * gamma * gamma * y * y);
+                curx += t * deltax;
+                cury += t * deltay;
+                traj.push([curx, cury]);
+                if(Math.abs(f(curx, cury) - f_prev) < epsilon){
+                    break;
+                }
+                f_prev = f(curx, cury);
+                numiter++;
             }
-            
+            // return [curx, cury];
+            return traj;
         }
 
         // Newton method
         function newton(x, y){
-
+            var gamma = 2;
+            var epsilon = 0.0001;
+            var maxiter = 1000;
+            var numiter = 1;
+            var curx = x, cury = y;
+            var traj = new Array();
+            traj.push([curx, cury]);
+            while(numiter < maxiter){
+                var deltax = -curx;
+                var deltay = -gamma * gamma * cury;
+                var t = 0.1;
+                curx += t * deltax;
+                cury += t * deltay;
+                traj.push([curx, cury]);
+                if(curx * curx + gamma * gamma * gamma * cury * cury <= epsilon){
+                    break;
+                }
+                numiter++;
+            }
+            // return [curx, cury];
+            return traj;
         }
 
         // svg element
@@ -200,6 +218,22 @@
                     .text(d.toString());
             });
 
+        // functions to transform geometric coordinates to svg coordinates
+        function gtosx(x){
+            return margin + (width - 2 * margin) * (x - xmin) / (xmax - xmin);
+        }
+        function gtosy(y){
+            return height - margin + (2 * margin - height) * (y - ymin) / (ymax - ymin);
+        }
+
+        // functions to transform svg coordinates to geometric coordinates
+        function stogx(x){
+            return xmin + (xmax - xmin) * (x - margin) / (width - 2 * margin);
+        }
+        function stogy(y){
+            return ymin + (ymax - ymin) * (y - height + margin) / (2 * margin - height);
+        }
+
         // draw x axis
         s.append("line")
             .attr("x1", margin)
@@ -259,13 +293,9 @@
             .data(xscale)
             .enter()
             .append("line")
-            .attr("x1", function(d){
-                return margin + (width - 2 * margin) * (d - xmin) / (xmax - xmin);
-            })
+            .attr("x1", function(d){ return gtosx(d); })
             .attr("y1", height - margin)
-            .attr("x2", function(d){
-                return margin + (width - 2 * margin) * (d - xmin) / (xmax - xmin);
-            })
+            .attr("x2", function(d){ return gtosx(d); })
             .attr("y2", height - margin + scalelength)
             .style("stroke", "black")
             .attr("stroke-width", "2px");
@@ -274,13 +304,9 @@
             .enter()
             .append("line")
             .attr("x1", margin)
-            .attr("y1", function(d){
-                return height - margin + (2 * margin - height) * (d - ymin) / (ymax - ymin);
-            })
+            .attr("y1", function(d){ return gtosy(d); })
             .attr("x2", margin - scalelength)
-            .attr("y2", function(d){
-                return height - margin + (2 * margin - height) * (d - ymin) / (ymax - ymin);
-            })
+            .attr("y2", function(d){ return gtosy(d); })
             .style("stroke", "black")
             .attr("stroke-width", "2px");
 
@@ -296,7 +322,7 @@
             .append("text")
             .text(function(d){ return d.toString(); })
             .attr("x", function(d){
-                return margin + (width - 2 * margin) * (d - xmin) / (xmax - xmin) + textoffsetx_x * d.toString().length;
+                return gtosx(d) + textoffsetx_x * d.toString().length;
             })
             .attr("y", height - margin + textoffsety_x)
             .style("fill", "black")
@@ -310,69 +336,53 @@
                 return margin + textoffsetx_y - (d.toString().length - 1) * textsize / 2;
             })
             .attr("y", function(d){
-                return height - margin + (2 * margin - height) * (d - ymin) / (ymax - ymin) + textoffsety_y;
+                return gtosy(d) + textoffsety_y;
             })
             .style("fill", "black")
             .style("font-size", textsize.toString() + "px");
 
         // set onclick function
         s.on("click", function(){
-            console.log(d3.event.clientX, d3.event.clientY);
             console.log(d3.mouse(this));
             var clickpos = d3.mouse(this);
-            var clickx = xmin + (xmax - xmin) * (clickpos[0] - margin) / (width - 2 * margin);
-            var clicky = ymin + (ymax - ymin) * (clickpos[1] - height + margin) / (2 * margin - height);
+            var clickx = stogx(clickpos[0]);
+            var clicky = stogy(clickpos[1]);
             console.log(clickx, clicky);
+            var traj1 = steepest_descent(clickx, clicky);
+            var traj2 = newton(clickx, clicky);
+            console.log("steepest");
+            console.log(traj1);
+            console.log("newton");
+            console.log(traj2);
+            
+            // clean former path
+            s.selectAll("path").remove();
+
+            // line generator function
+            var linefunc = d3.line()
+                            .x(function(d){ return gtosx(d[0]); })
+                            .y(function(d){ return gtosy(d[1]); })
+                            .curve(d3.curveLinear);
+            
+            // draw steepest descent optimization path
+            s.append("path")
+                .attr("d", linefunc(traj1))
+                .attr("stroke", "purple")
+                .attr("stroke-width", 3)
+                .attr("fill", "none");
+            
+            // draw Newton method optimization path
+            s.append("path")
+                .attr("d", linefunc(traj2))
+                .attr("stroke", "brown")
+                .attr("stroke-width", 3)
+                .attr("fill", "none");
+
+            console.log("draw finish");
         })
 
     </script>
 
-    <div id="graph"></div>
-    
-    <script type="text/javascript">
-        var vis = d3.select("#graph")
-                    .append("svg");
-        var w = 600, h = 400;
-        var userX = 0, userY = 0;
-        vis.attr("width", w)
-            .attr("height", h);
-        var nodes = [{x: 30, y: 50},
-                     {x: 50, y: 80},
-                     {x: 90, y: 120}]
-        vis.selectAll("circle .nodes")
-            .data(nodes)
-            .enter()
-            .append("svg:circle")
-            .attr("class", "nodes")
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; })
-            .attr("r", "10px")
-            .attr("fill", "black")
-            .on('click', function(d){
-                console.log(d3.event.clientX, d3.event.clientY);
-                console.log(d3.mouse(this));
-            })
-        var links = [{source: nodes[0], target: nodes[1]},
-                    {source: nodes[2], target: nodes[1]}]
-        vis.selectAll(".line")
-            .data(links)
-            .enter()
-            .append("line")
-            .attr("x1", function(d) { return d.source.x })
-            .attr("y1", function(d) { return d.source.y })
-            .attr("x2", function(d) { return d.target.x })
-            .attr("y2", function(d) { return d.target.y })
-            .style("stroke", "rgb(6,120,155)");
-        vis.selectAll(".text")
-            .data([userX, userY])
-            .enter()
-            .append("text")
-            .text("Func" + userX.toString())
-            .style("fill", "red")
-            .attr("x", 100)
-            .attr("y", 300)
-
-    </script>
 
 </body>
 
