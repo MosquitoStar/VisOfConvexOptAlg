@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+
+<head>
+    <meta charset="utf-8">
+</head>
+
+
+<body>
+
+    <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
+    <!-- use local d3.js script file -->
+    <script src="d3/d3.min.js"></script> 
+
+    <p>Hello</p>
+    <p>World!</p>
+    <p>Test</p>
+    <p>d3.js</p>
+
+    <script type="text/javascript">
+        
+        d3.selectAll("p").style("color", function() {
+            return "hsl(" + Math.random() * 360 + ",100%,50%)";
+        }).text("hahahaha");
+
+    </script>
+
+
+    <script type="text/javascript">
+        var redVal=0;
+        var greenVal=0;
+        var blueVal=0;
+        function changeCol(evt)
+        {
+            var targetshape = evt.target;
+            redVal = Math.round(Math.random()*255);
+            greenVal = Math.round(Math.random()*255);
+            blueVal = Math.round(Math.random()*255);
+            targetshape.setAttribute("fill", "rgb(" + redVal + "," + greenVal + "," + blueVal + ")");
+        
+        }
+    </script>
+    
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+        <circle cx="100" cy="50" r="40" stroke="black" stroke-width="2" fill="red" onclick="changeCol(evt)"/>
+        <ellipse cx="300" cy="80" rx="100" ry="50"style="fill:yellow;stroke:purple;stroke-width:2"/>
+    </svg>
+
+    <div id="canvas"></div>
+
+    <table>
+        <tr>
+            <th style="width: 10px;font-size: 10px;">x:</th>
+            <td id="curx" style="width: 120px;font-size: 10px;">0.0</td>
+            <th style="width: 10px;font-size: 10px;">y:</th>
+            <td id="cury" style="width: 120px;font-size: 10px;">0.0</td>
+            <th style="width: 10px;font-size: 10px;">f:</th>
+            <td id="curf" style="width: 120px;font-size: 10px;">0.0</td>
+        </tr>
+    </table>
+
+    <script type="text/javascript">
+
+        // function to visualize
+        function f(x, y){
+            var a = 3, b = 5, c = 0.1, d = 0.4;
+            return x * x + y * y - a * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
+            return Math.sqrt(x * x + y * y);
+        }
+
+        // gradient of function f
+        function f_grad(x, y){
+            var a = 3, b = 5, c = 0.1, d = 0.4;
+            var px = 2 * x - a * (-2 / c * (x - 1)) * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * (-2 / d * (x + 1)) * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
+            var py = 2 * y - a * (-2 / c * y) * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * (-2 / d * y) * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
+            return [px, py];
+        }
+
+        // steepest descent method
+        function steepest_descent(x, y){
+            var curx = x, cury = y;
+            while (true) {
+                var gradient = f_grad(curx, cury);
+                var deltax = gradient[0];
+                var deltay = gradient[1];
+                
+            }
+            
+        }
+
+        // Newton method
+        function newton(x, y){
+
+        }
+
+        // svg element
+        var s = d3.select("#canvas")
+                    .append("svg");
+        
+        // size of svg image
+        var width = 600, height = 400;
+        var margin = 30;
+        
+        // range of (x, y)
+        var xmin = -3, xmax = 3;
+        var ymin = -2, ymax = 2;
+        
+        // heatmap segmentation parameter
+        var d = 100;
+        var xd = width>height? d : Math.round(d * width / height);
+        var yd = width>height? Math.round(d * height / width) : d;
+        var dx = (xmax - xmin) / xd, dy = (ymax - ymin) / yd;
+        var dw = (width - 2 * margin) / xd, dh = (height - 2 * margin) / yd;
+        
+        // data (stored in row-major order)
+        var data = new Array();
+        var mindata = Infinity, maxdata = -Infinity;
+        for(var i = 0; i < xd; i++){
+            data[i] = new Array();
+            for(var j = 0; j < yd; j++){
+                var x = xmin + dx * i;
+                var y = ymin + dy * j;
+                data[i][j] = f(x, y);
+                mindata = Math.min(mindata, data[i][j]);
+                maxdata = Math.max(maxdata, data[i][j]);
+            }
+        }
+
+        // flatten data
+        var dataf = new Array(xd * yd);
+        for(var i = 0; i < xd; i++){
+            for(var j = 0; j < yd; j++){
+                dataf[i * yd + j] = data[i][j];
+            }
+        }
+
+        // heatmap function
+        function palette_color(v, minv, maxv){
+            var palette = [
+                [35, 35, 220],
+                [55, 200, 55],
+                [200, 200, 55],
+                [200, 55, 55],
+            ];
+            var r, g, b;
+            var valueweight = (v - minv) / (maxv - minv);
+            for(var i = 0; i < palette.length - 1; i++){
+                if(valueweight >= i / (palette.length - 1) && valueweight <= (i + 1) / (palette.length - 1)){
+                    r = palette[i][0] + (palette[i + 1][0] - palette[i][0]) * (valueweight - i / (palette.length - 1)) * (palette.length - 1);
+                    g = palette[i][1] + (palette[i + 1][1] - palette[i][1]) * (valueweight - i / (palette.length - 1)) * (palette.length - 1);
+                    b = palette[i][2] + (palette[i + 1][2] - palette[i][2]) * (valueweight - i / (palette.length - 1)) * (palette.length - 1);
+                }
+            } 
+            return {red: r, green: g, blue: b};
+        }
+
+        // set height and width 
+        s.attr("width", width).attr("height", height);
+
+        // draw function value text
+        var fvalue = 0.0;
+        s.append("text")
+            .text(fvalue.toString())
+            .attr("id", "fvalue")
+            .attr("x", 0)
+            .attr("y", 10)
+            .style("fill", "black")
+            .style("font-size", "8px");
+
+        // draw heatmap
+        s.selectAll()
+            .data(dataf)
+            .enter()
+            .append("rect")
+            .attr("x", function(d, k){
+                var i = Math.floor(k / yd);
+                return margin + i * dw;
+            })
+            .attr("y", function(d, k){
+                var j = k % yd;
+                return height - margin - (j + 1) * dh;
+            })
+            .attr("width", function(d, k){ return dw; })
+            .attr("height", function(d, k){ return dh; })
+            .attr("fill", function(d, k){ 
+                var c = palette_color(d, mindata, maxdata);
+                return "rgb(" + c.red + "," + c.green + "," + c.blue + ")"; 
+            })
+            .on("mouseover", function(d, k){
+                fvalue = d;
+                var i = Math.floor(k / yd);
+                var j = k % yd;
+                s.select("#fvalue")
+                    .text(fvalue.toString());
+                d3.select("#curx")
+                    .text((xmin + i * dx).toString());
+                d3.select("#cury")
+                    .text((ymin + j * dy).toString());
+                d3.select("#curf")
+                    .text(d.toString());
+            });
+
+        // draw x axis
+        s.append("line")
+            .attr("x1", margin)
+            .attr("y1", height - margin)
+            .attr("x2", width - margin)
+            .attr("y2", height - margin)
+            .style("stroke", "black")
+            .attr("stroke-width", "2px");
+
+        // draw y axis
+        s.append("line")
+            .attr("x1", margin)
+            .attr("y1", height - margin)
+            .attr("x2", margin)
+            .attr("y2", margin)
+            .style("stroke", "black")
+            .attr("stroke-width", "2px");
+
+        // function to regulate scale
+        function regulate(minv, maxv, numscale){
+            if(numscale < 1 || maxv < minv){
+                return;
+            }
+            var delta = maxv - minv;
+            var exp = Math.floor(Math.log(delta) / Math.log(10)) - 2;
+            var multiplier = Math.pow(10, exp);
+            var solutions = [1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
+            var i;
+            for(i = 0; i < solutions.length; i++){
+                var multical = multiplier * solutions[i];
+                if(Math.floor(delta / multical) + 1 <= numscale){
+                    break;
+                }
+            }
+            var interval = multiplier * solutions[i];
+            var startpoint = (Math.ceil(minv / interval) - 1) * interval;
+            var scale = new Array()
+            var idx;
+            for(idx = 0; ; idx++)
+            {
+                scale.push(startpoint + interval * idx);
+                if(startpoint + interval * idx > maxv){
+                    break;
+                }
+            }
+            return scale;
+        }
+
+        // draw scale
+        var numscale = 10;
+        var numscalex = width>height? numscale : Math.round(numscale * width / height);
+        var numscaley = width>height? Math.round(numscale * height / width) : numscale;
+        var xscale = regulate(xmin, xmax, numscalex);
+        var yscale = regulate(ymin, ymax, numscaley);
+        var scalelength = 3;
+        s.selectAll()
+            .data(xscale)
+            .enter()
+            .append("line")
+            .attr("x1", function(d){
+                return margin + (width - 2 * margin) * (d - xmin) / (xmax - xmin);
+            })
+            .attr("y1", height - margin)
+            .attr("x2", function(d){
+                return margin + (width - 2 * margin) * (d - xmin) / (xmax - xmin);
+            })
+            .attr("y2", height - margin + scalelength)
+            .style("stroke", "black")
+            .attr("stroke-width", "2px");
+        s.selectAll()
+            .data(yscale)
+            .enter()
+            .append("line")
+            .attr("x1", margin)
+            .attr("y1", function(d){
+                return height - margin + (2 * margin - height) * (d - ymin) / (ymax - ymin);
+            })
+            .attr("x2", margin - scalelength)
+            .attr("y2", function(d){
+                return height - margin + (2 * margin - height) * (d - ymin) / (ymax - ymin);
+            })
+            .style("stroke", "black")
+            .attr("stroke-width", "2px");
+
+        // draw scale text
+        var textoffsetx_x = -3;
+        var textoffsety_x = 15;
+        var textoffsetx_y = -15;
+        var textoffsety_y = 3;
+        var textsize = 10;
+        s.selectAll()
+            .data(xscale)
+            .enter()
+            .append("text")
+            .text(function(d){ return d.toString(); })
+            .attr("x", function(d){
+                return margin + (width - 2 * margin) * (d - xmin) / (xmax - xmin) + textoffsetx_x * d.toString().length;
+            })
+            .attr("y", height - margin + textoffsety_x)
+            .style("fill", "black")
+            .style("font-size", textsize.toString() + "px");
+        s.selectAll()
+            .data(xscale)
+            .enter()
+            .append("text")
+            .text(function(d){ return d.toString(); })
+            .attr("x", function(d){
+                return margin + textoffsetx_y - (d.toString().length - 1) * textsize / 2;
+            })
+            .attr("y", function(d){
+                return height - margin + (2 * margin - height) * (d - ymin) / (ymax - ymin) + textoffsety_y;
+            })
+            .style("fill", "black")
+            .style("font-size", textsize.toString() + "px");
+
+        // set onclick function
+        s.on("click", function(){
+            console.log(d3.event.clientX, d3.event.clientY);
+            console.log(d3.mouse(this));
+            var clickpos = d3.mouse(this);
+            var clickx = xmin + (xmax - xmin) * (clickpos[0] - margin) / (width - 2 * margin);
+            var clicky = ymin + (ymax - ymin) * (clickpos[1] - height + margin) / (2 * margin - height);
+            console.log(clickx, clicky);
+        })
+
+    </script>
+
+    <div id="graph"></div>
+    
+    <script type="text/javascript">
+        var vis = d3.select("#graph")
+                    .append("svg");
+        var w = 600, h = 400;
+        var userX = 0, userY = 0;
+        vis.attr("width", w)
+            .attr("height", h);
+        var nodes = [{x: 30, y: 50},
+                     {x: 50, y: 80},
+                     {x: 90, y: 120}]
+        vis.selectAll("circle .nodes")
+            .data(nodes)
+            .enter()
+            .append("svg:circle")
+            .attr("class", "nodes")
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; })
+            .attr("r", "10px")
+            .attr("fill", "black")
+            .on('click', function(d){
+                console.log(d3.event.clientX, d3.event.clientY);
+                console.log(d3.mouse(this));
+            })
+        var links = [{source: nodes[0], target: nodes[1]},
+                    {source: nodes[2], target: nodes[1]}]
+        vis.selectAll(".line")
+            .data(links)
+            .enter()
+            .append("line")
+            .attr("x1", function(d) { return d.source.x })
+            .attr("y1", function(d) { return d.source.y })
+            .attr("x2", function(d) { return d.target.x })
+            .attr("y2", function(d) { return d.target.y })
+            .style("stroke", "rgb(6,120,155)");
+        vis.selectAll(".text")
+            .data([userX, userY])
+            .enter()
+            .append("text")
+            .text("Func" + userX.toString())
+            .style("fill", "red")
+            .attr("x", 100)
+            .attr("y", 300)
+
+    </script>
+
+</body>
+
+</html>
