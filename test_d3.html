@@ -116,19 +116,26 @@
                     .append("svg");
         
         // size of svg image
-        var width = 600, height = 400;
-        var margin = 30;
+        const width = 600, height = 400;
+        const margin = {top: 30, right: 30, bottom: 30, left: 30};
         
         // range of (x, y)
         var xmin = -3, xmax = 3;
         var ymin = -2, ymax = 2;
+
+        // svg element group
+        var gs = s.append('g')
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+        // graph element group
+        var g = gs.append('g');
         
         // heatmap segmentation parameter
         var d = 100;
         var xd = width>height? d : Math.round(d * width / height);
         var yd = width>height? Math.round(d * height / width) : d;
         var dx = (xmax - xmin) / xd, dy = (ymax - ymin) / yd;
-        var dw = (width - 2 * margin) / xd, dh = (height - 2 * margin) / yd;
+        var dw = width / xd, dh = height / yd;
         
         // data (stored in row-major order)
         var data = new Array();
@@ -173,30 +180,20 @@
         }
 
         // set height and width 
-        s.attr("width", width).attr("height", height);
-
-        // draw function value text
-        var fvalue = 0.0;
-        s.append("text")
-            .text(fvalue.toString())
-            .attr("id", "fvalue")
-            .attr("x", 0)
-            .attr("y", 10)
-            .style("fill", "black")
-            .style("font-size", "8px");
+        s.attr("width", width + margin.left + margin.right).attr("height", height + margin.top + margin.bottom);
 
         // draw heatmap
-        s.selectAll()
+        g.selectAll()
             .data(dataf)
             .enter()
             .append("rect")
             .attr("x", function(d, k){
                 var i = Math.floor(k / yd);
-                return margin + i * dw;
+                return i * dw;
             })
             .attr("y", function(d, k){
                 var j = k % yd;
-                return height - margin - (j + 1) * dh;
+                return height - (j + 1) * dh;
             })
             .attr("width", function(d, k){ return dw; })
             .attr("height", function(d, k){ return dh; })
@@ -208,8 +205,6 @@
                 fvalue = d;
                 var i = Math.floor(k / yd);
                 var j = k % yd;
-                s.select("#fvalue")
-                    .text(fvalue.toString());
                 d3.select("#curx")
                     .text((xmin + i * dx).toString());
                 d3.select("#cury")
@@ -218,41 +213,32 @@
                     .text(d.toString());
             });
 
-        // functions to transform geometric coordinates to svg coordinates
-        function gtosx(x){
-            return margin + (width - 2 * margin) * (x - xmin) / (xmax - xmin);
-        }
-        function gtosy(y){
-            return height - margin + (2 * margin - height) * (y - ymin) / (ymax - ymin);
-        }
+        // (deprecated) functions to transform geometric coordinates to svg coordinates 
+        function gtosx(x){ return width * (x - xmin) / (xmax - xmin); }
+        function gtosy(y){ return height + (-height) * (y - ymin) / (ymax - ymin); }
 
-        // functions to transform svg coordinates to geometric coordinates
-        function stogx(x){
-            return xmin + (xmax - xmin) * (x - margin) / (width - 2 * margin);
-        }
-        function stogy(y){
-            return ymin + (ymax - ymin) * (y - height + margin) / (2 * margin - height);
-        }
+        // (deprecated) functions to transform svg coordinates to geometric coordinates
+        function stogx(x){ return xmin + (xmax - xmin) * x / width; }
+        function stogy(y){ return ymin + (ymax - ymin) * (y - height) / (-height); }
 
-        // draw x axis
-        s.append("line")
-            .attr("x1", margin)
-            .attr("y1", height - margin)
-            .attr("x2", width - margin)
-            .attr("y2", height - margin)
-            .style("stroke", "black")
-            .attr("stroke-width", "2px");
+        // scale from geometric coordinates to svg coordinates
+        var gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
+        var gtosy = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]);
 
-        // draw y axis
-        s.append("line")
-            .attr("x1", margin)
-            .attr("y1", height - margin)
-            .attr("x2", margin)
-            .attr("y2", margin)
-            .style("stroke", "black")
-            .attr("stroke-width", "2px");
+        // scale from svg coordinates to geometric coordinates
+        var stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
+        var stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
 
-        // function to regulate scale
+        // draw x axis and y axis
+        var xaxis = d3.axisBottom(gtosx).ticks(5);
+        gs.append('g')
+            .attr('transform', 'translate(0,' + height + ')')
+            .call(xaxis);
+        var yaxis = d3.axisLeft(gtosy).ticks(5);
+        gs.append('g')
+            .call(yaxis);
+
+        // (deprecated) function to regulate scale
         function regulate(minv, maxv, numscale){
             if(numscale < 1 || maxv < minv){
                 return;
@@ -282,67 +268,8 @@
             return scale;
         }
 
-        // draw scale
-        var numscale = 10;
-        var numscalex = width>height? numscale : Math.round(numscale * width / height);
-        var numscaley = width>height? Math.round(numscale * height / width) : numscale;
-        var xscale = regulate(xmin, xmax, numscalex);
-        var yscale = regulate(ymin, ymax, numscaley);
-        var scalelength = 3;
-        s.selectAll()
-            .data(xscale)
-            .enter()
-            .append("line")
-            .attr("x1", function(d){ return gtosx(d); })
-            .attr("y1", height - margin)
-            .attr("x2", function(d){ return gtosx(d); })
-            .attr("y2", height - margin + scalelength)
-            .style("stroke", "black")
-            .attr("stroke-width", "2px");
-        s.selectAll()
-            .data(yscale)
-            .enter()
-            .append("line")
-            .attr("x1", margin)
-            .attr("y1", function(d){ return gtosy(d); })
-            .attr("x2", margin - scalelength)
-            .attr("y2", function(d){ return gtosy(d); })
-            .style("stroke", "black")
-            .attr("stroke-width", "2px");
-
-        // draw scale text
-        var textoffsetx_x = -3;
-        var textoffsety_x = 15;
-        var textoffsetx_y = -15;
-        var textoffsety_y = 3;
-        var textsize = 10;
-        s.selectAll()
-            .data(xscale)
-            .enter()
-            .append("text")
-            .text(function(d){ return d.toString(); })
-            .attr("x", function(d){
-                return gtosx(d) + textoffsetx_x * d.toString().length;
-            })
-            .attr("y", height - margin + textoffsety_x)
-            .style("fill", "black")
-            .style("font-size", textsize.toString() + "px");
-        s.selectAll()
-            .data(xscale)
-            .enter()
-            .append("text")
-            .text(function(d){ return d.toString(); })
-            .attr("x", function(d){
-                return margin + textoffsetx_y - (d.toString().length - 1) * textsize / 2;
-            })
-            .attr("y", function(d){
-                return gtosy(d) + textoffsety_y;
-            })
-            .style("fill", "black")
-            .style("font-size", textsize.toString() + "px");
-
         // set onclick function
-        s.on("click", function(){
+        g.on("click", function(){
             console.log(d3.mouse(this));
             var clickpos = d3.mouse(this);
             var clickx = stogx(clickpos[0]);
@@ -365,14 +292,14 @@
                             .curve(d3.curveLinear);
             
             // draw steepest descent optimization path
-            s.append("path")
+            g.append("path")
                 .attr("d", linefunc(traj1))
                 .attr("stroke", "purple")
                 .attr("stroke-width", 3)
                 .attr("fill", "none");
             
             // draw Newton method optimization path
-            s.append("path")
+            g.append("path")
                 .attr("d", linefunc(traj2))
                 .attr("stroke", "brown")
                 .attr("stroke-width", 3)
