@@ -124,11 +124,11 @@
         var ymin = -2, ymax = 2;
 
         // svg element group
-        var gs = s.append('g')
-                    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+        var gs = s.append("g")
+                    .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
         // graph element group
-        var g = gs.append('g');
+        var g = gs.append("g");
         
         // heatmap segmentation parameter
         var d = 100;
@@ -231,11 +231,14 @@
 
         // draw x axis and y axis
         var xaxis = d3.axisBottom(gtosx).ticks(5);
-        gs.append('g')
-            .attr('transform', 'translate(0,' + height + ')')
+        gs.append("g")
+            .attr("id", "axis-x")
+            .attr("transform", "translate(0," + height + ")")
             .call(xaxis);
         var yaxis = d3.axisLeft(gtosy).ticks(5);
-        gs.append('g')
+        gs.append("g")
+            .attr("id", "axis-y")
+            .attr("transform", "translate(0,0)")
             .call(yaxis);
 
         // (deprecated) function to regulate scale
@@ -282,7 +285,7 @@
             console.log("newton");
             console.log(traj2);
             
-            // clean former path
+            // clean former paths
             s.selectAll("path").remove();
 
             // line generator function
@@ -292,21 +295,47 @@
                             .curve(d3.curveLinear);
             
             // draw steepest descent optimization path
-            g.append("path")
-                .attr("d", linefunc(traj1))
-                .attr("stroke", "purple")
-                .attr("stroke-width", 3)
-                .attr("fill", "none");
+            draw_path(traj1, traj1.length * 100, "black", 2);
             
             // draw Newton method optimization path
-            g.append("path")
-                .attr("d", linefunc(traj2))
-                .attr("stroke", "brown")
-                .attr("stroke-width", 3)
-                .attr("fill", "none");
+            draw_path(traj2, traj2.length * 40, "white", 2);
+
+            // re-draw axis
+            gs.selectAll("#axis-x").remove();
+            gs.selectAll("#axis-y").remove();
+            var xaxis = d3.axisBottom(gtosx).ticks(5);
+            gs.append("g")
+                .attr("id", "axis-x")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xaxis);
+            var yaxis = d3.axisLeft(gtosy).ticks(5);
+            gs.append("g")
+                .attr("id", "axis-y")
+                .attr("transform", "translate(0,0)")
+                .call(yaxis);
 
             console.log("draw finish");
         })
+
+        function draw_path(traj, duration, color, stroke_width){
+            var transition = d3.transition()
+                                .duration(duration)
+                                .ease(d3.easeLinear);
+            var linefunc = d3.line()
+                                .x(function(d){ return gtosx(d[0]); })
+                                .y(function(d){ return gtosy(d[1]); })
+                                .curve(d3.curveLinear);
+            var path = g.append("path")
+                        .attr("d", linefunc(traj))
+                        .attr("stroke", color)
+                        .attr("stroke-width", stroke_width)
+                        .attr("fill", "none");
+            var pathlength = path.node().getTotalLength();
+            path.attr('stroke-dasharray', pathlength + ' ' + pathlength)
+                .attr('stroke-dashoffset', pathlength)
+                .transition(transition) 
+                .attr('stroke-dashoffset', 0);
+        }
 
     </script>
 

@@ -59,58 +59,19 @@
         .duration(duration)
         .ease(d3.easeLinear);
 
-    
         const path = g.append('g')
-        .attr('clip-path', 'url(#clip)')
         .append('path')
         .datum(data)
+        .attr('d', line)
         .attr('fill', 'none')
-        .attr('stroke', 'red')
-        .transition(transition)
-        .on('start', tick);
-        
-        let flag = true;
+        .attr('stroke', 'blue');
 
-        function tick() {
-            time = new Date();
-            xScale.domain([time - (n - 2) * duration, time - duration]);
+        var totalLength = path.node().getTotalLength();
 
-            // push the accumulated count onto the back, and reset the count
-            data.push(random());
-
-            // slide the x-axis left
-            d3.select('.axis--x')
-                .transition(transition)
-                .call(xAxis);
-
-            // Redraw the line.
-            const pa = d3.select(this)
-                .attr('d', line)
-                .attr('transform', null);
-
-            const totalLength = path.node().getTotalLength();
-
-            if (flag) {
-                //判断是否是第一次渲染，是的话添加一个动画
-                // Set Properties of Dash Array and Dash Offset and initiate Transition
-                pa
-                .attr('stroke-dasharray', totalLength + ' ' + totalLength)
-                .attr('stroke-dashoffset', totalLength)
-                .transition(transition) // Call Transition Method
-                .attr('stroke-dashoffset', 0); // Set final value of dash-offset for transition
-            
-                flag = false;
-            }
-
-            // Slide it to the left.
-            d3.active(this)
-                .attr('transform', `translate(${xScale(time - (n - 1) * duration)})`)
-                .transition(transition)
-                .on('start', tick);
-
-            // pop the old data point off the front
-            data.shift();
-        }
+        path.attr('stroke-dasharray', totalLength + ' ' + totalLength)
+        .attr('stroke-dashoffset', totalLength)
+        .transition(transition) 
+        .attr('stroke-dashoffset', 0);
     </script>
 
 </body>
