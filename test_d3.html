@@ -17,15 +17,15 @@
         <div id="toolboxBg" class="bg-rect"></div>
         <ul id="stb-list" class="stb-ul">
             <li>
-                <a href="javascript:void(0)" onclick="toolboxFunc()" class="sidetoolbtn">
+                <a href="javascript:void(0)" onclick="toobox_func()" class="sidetoolbtn">
                     <img src="assets/images/settings.png" height="40px" width="40px"></img>
                 </a>
             </li>
             <li class="stb-li">
                 <a href="#" class="toolbtn">Cursor</a>
                 <ul class="stb-sub-ul">
-                    <li class="stb-sub-li"><a href="#">Move</a></li>
-                    <li class="stb-sub-li"><a href="#">Click</a></li>
+                    <li id="cursor-move" class="stb-sub-li"><a href="#" onclick="set_cursor_type(this)">Move</a></li>
+                    <li id="cursor-click" class="stb-sub-li"><a href="#" onclick="set_cursor_type(this)">Click</a></li>
                 </ul>
             </li>
             <li class="stb-li">
@@ -63,8 +63,8 @@
             <div id="canvas-coordinate">
                 <table class="coord-table">
                     <tr>
-                        <th>x:</th> <td id="curx">0.000000</td>
-                        <th>y:</th> <td id="cury">0.000000</td>
+                        <th>x:</th> <td id="curx">0.0000</td>
+                        <th>y:</th> <td id="cury">0.0000</td>
                         <th>f:</th> <td id="curf">0.000000</td>
                     </tr>
                 </table>
@@ -89,25 +89,25 @@
 
         var isNavOpen = false;
 
-        function toolboxFunc() {
+        function toobox_func() {
             if(isNavOpen){
-                closeToolbox();
+                close_toolbox();
                 isNavOpen = false;
             }else{
-                openToolbox();
+                open_toolbox();
                 isNavOpen = true;
             }
         }
 
-        function openToolbox() {
+        function open_toolbox() {
             bg.style("width", "200px");
-            main.style("margin-left", "150px");
+            main.style("margin-left", "120px");
             tb_btn.select("img").attr("src", "assets/images/close.png");
             setTimeout(function(){ tool.style("visibility", "visible"); }, 360);
             isNavOpen = true;
         }
         
-        function closeToolbox() {
+        function close_toolbox() {
             tool.style("visibility", "hidden");
             bg.style("width", "80px");
             main.style("margin-left", "0px");
@@ -121,7 +121,7 @@
         function hotkey(){
             var kc = window.event.keyCode;
             if(kc == 192){ // press the key "`"
-                toolboxFunc();
+                toobox_func();
             }
         }
         document.onkeydown = hotkey;
