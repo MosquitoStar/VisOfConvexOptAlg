@@ -10,6 +10,25 @@ body {
     margin-left: 80px;
 }
 
+.canvas {
+    text-align: center;
+}
+
+.opt-btn {
+    float: left;
+    width: 20px;
+    height: 20px;
+}
+
+.opt-lbl {
+    font-style: inherit;
+    font-size: 10px;
+    text-align: center;
+    float: left;
+    width: inherit;
+    padding-top: 3px;
+}
+
 .stb-ul {
     margin: 0;
     padding: 0;

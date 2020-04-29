@@ -46,7 +46,7 @@
             <li class="stb-li">
                 <a href="#" class="toolbtn">About</a>
                 <ul class="stb-sub-ul">
-                    <li class="stb-sub-li"><a href="#">Report</a></li>
+                    <li class="stb-sub-li"><a href="report.pdf">Report</a></li>
                 </ul>
             </li>
         </ul>
@@ -56,9 +56,20 @@
     <div id="main">
 
         <!-- Visualization content starts -->
-        <div class="canvas" style="text-align: center;">
+        <div class="canvas" onselectstart="return false;">
             <h1>Visualizing Convex Optimization</h1>
-            <div id="canvas-header"></div>
+            <div id="canvas-header">
+                <div style="position: relative; display: inline-block;">
+                    <svg id="toggle0" class="opt-btn">
+                        <circle cx="10" cy="10" r="8" stroke-width="2" stroke="black" fill="Aquamarine" onclick="show_hide_traj(0)"></circle>
+                    </svg>
+                    <span class="opt-lbl">&nbsp;&nbsp;Steepest Descent&nbsp;&nbsp;&nbsp;</span>
+                    <svg id="toggle1" class="opt-btn">
+                        <circle cx="10" cy="10" r="8" stroke-width="2" stroke="black" fill="AntiqueWhite" onclick="show_hide_traj(1)"></circle>
+                    </svg>
+                    <span class="opt-lbl">&nbsp;&nbsp;Newton Method&nbsp;&nbsp;&nbsp;</span>
+                </div>
+            </div>
             <div id="canvas-body"></div>
             <div id="canvas-coordinate">
                 <table class="coord-table">
@@ -79,6 +90,7 @@
     <!-- use local d3.js script file -->
     <script src="d3/d3.min.js"></script> 
 
+    <script src="assets/js/optimize.js"></script>
     <script src="assets/js/heatmap.js"></script>
 
     <script type="text/javascript">

@@ -1,92 +1,9 @@
-// quandratic bowl function
-function quad_bowl(x, y){
-    var a = 3, b = 5, c = 0.1, d = 0.4;
-    return x * x + y * y - a * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
-    return Math.sqrt(x * x + y * y);
-}
-
-// gradient of quandratic bowl function 
-function quad_bowl_grad(x, y){
-    var a = 3, b = 5, c = 0.1, d = 0.4;
-    var px = 2 * x - a * (-2 / c * (x - 1)) * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * (-2 / d * (x + 1)) * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
-    var py = 2 * y - a * (-2 / c * y) * Math.exp(-((x - 1) * (x - 1) + y * y) / c) - b * (-2 / d * y) * Math.exp(-((x + 1) * (x + 1) + y * y) / d);
-    return [px, py];
-}
-
-// the function in tutorial 7
-function t7f(x, y){
-    var gamma = 2;
-    return 0.5 * (x * x + 2 * y * y);
-}
-
-// gradient of the function in tutorial 7
-function t7f_grad(x, y){
-    var gamma = 2;
-    return [x, gamma * y];
-}
-
-// optimization objective function
-var f = t7f;
-var f_grad = t7f_grad;
-
-// steepest descent method
-function steepest_descent(x, y){
-    var gamma = 2;
-    var epsilon = 0.0001;
-    var maxiter = 1000;
-    var numiter = 1;
-    var curx = x, cury = y;
-    var f_prev = f(curx, cury);
-    var traj = new Array();
-    traj.push([curx, cury]);
-    while (numiter < maxiter) {
-        var gradient = f_grad(curx, cury);
-        var deltax = -gradient[0];
-        var deltay = -gradient[1];
-        var t = (curx * curx + gamma * gamma * y * y) / (curx * curx + gamma * gamma * gamma * y * y);
-        curx += t * deltax;
-        cury += t * deltay;
-        traj.push([curx, cury]);
-        if(Math.abs(f(curx, cury) - f_prev) < epsilon){
-            break;
-        }
-        f_prev = f(curx, cury);
-        numiter++;
-    }
-    return traj;
-}
-
-// Newton method
-function newton(x, y){
-    var gamma = 2;
-    var epsilon = 0.0001;
-    var maxiter = 1000;
-    var numiter = 1;
-    var curx = x, cury = y;
-    var traj = new Array();
-    traj.push([curx, cury]);
-    while(numiter < maxiter){
-        var deltax = -curx;
-        var deltay = -gamma * gamma * cury;
-        var t = 0.1;
-        curx += t * deltax;
-        cury += t * deltay;
-        traj.push([curx, cury]);
-        if(curx * curx + gamma * gamma * gamma * cury * cury <= epsilon){
-            break;
-        }
-        numiter++;
-    }
-    return traj;
-}
-
 // size of svg image
 const width = 600, height = 400;
-const margin = {top: 60, right: 30, bottom: 30, left: 30};
+const margin = {top: 10, right: 30, bottom: 30, left: 30};
 
 // svg element
-var s = d3.select("#canvas-body")
-            .append("svg");
+var s = d3.select("#canvas-body").append("svg");
 
 // range of (x, y)
 var xmin = -3, xmax = 3;
@@ -105,13 +22,26 @@ var xticknum = 5, yticknum = 5;
 // minimum and maximum of data
 var mindata = Infinity, maxdata = -Infinity;
 
-// (deprecated) functions to transform geometric coordinates to svg coordinates 
-// function gtosx(x){ return width * (x - xmin) / (xmax - xmin); }
-// function gtosy(y){ return height + (-height) * (y - ymin) / (ymax - ymin); }
+// cursor type
+var cursor_type = null;
 
-// (deprecated) functions to transform svg coordinates to geometric coordinates
-// function stogx(x){ return xmin + (xmax - xmin) * x / width; }
-// function stogy(y){ return ymin + (ymax - ymin) * (y - height) / (-height); }
+// number of optimization algorithms
+var num_opt = 2;
+
+// optmization trajectory
+var traj = new Array(num_opt).fill(null);
+
+// optimization trajectory color
+var color = ["Aquamarine", "AntiqueWhite", "LightPink", "LightCoral", "LightBlue"]
+
+// show or hide optimization trajectory
+var traj_show = new Array(num_opt).fill(true);
+
+// drag parameters
+var drag_pos = [0, 0];
+
+// zoom parameters
+var zoom_scale = 1;
 
 // scale from geometric coordinates to svg coordinates
 var gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
@@ -229,48 +159,6 @@ function clear_axis(){
     gs.selectAll("#axis-y").remove();
 }
 
-// (deprecated) function to regulate scale
-function regulate(minv, maxv, numscale){
-    if(numscale < 1 || maxv < minv){
-        return;
-    }
-    var delta = maxv - minv;
-    var exp = Math.floor(Math.log(delta) / Math.log(10)) - 2;
-    var multiplier = Math.pow(10, exp);
-    var solutions = [1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
-    var i;
-    for(i = 0; i < solutions.length; i++){
-        var multical = multiplier * solutions[i];
-        if(Math.floor(delta / multical) + 1 <= numscale){
-            break;
-        }
-    }
-    var interval = multiplier * solutions[i];
-    var startpoint = (Math.ceil(minv / interval) - 1) * interval;
-    var scale = new Array()
-    var idx;
-    for(idx = 0; ; idx++)
-    {
-        scale.push(startpoint + interval * idx);
-        if(startpoint + interval * idx > maxv){
-            break;
-        }
-    }
-    return scale;
-}
-
-// cursor type
-var cursor_type = null;
-
-// optmization trajectory
-var traj = new Array();
-
-// drag parameters
-var drag_pos = [0, 0];
-
-// zoom parameters
-var zoom_scale = 1;
-
 // function to set cursor type (click or move)
 function set_cursor_type(type){
     if (type == "Click" || type.innerHTML == "Click"){
@@ -331,17 +219,12 @@ function click_func(){
     g.selectAll("path").remove();
     
     // draw optimization paths
-    draw_path(traj1, traj1.length * 100, "black", 2);
-    draw_path(traj2, traj2.length * 40, "white", 2);
+    draw_path(traj1, "traj0", traj1.length * 100, color[0], 2, traj_show[0]);
+    draw_path(traj2, "traj1", traj2.length * 40, color[1], 2, traj_show[1]);
 
     // store optimization trajectories
-    traj = new Array();
-    traj.push(traj1);
-    traj.push(traj2);
-
-    // re-draw axises
-    clear_axis();
-    draw_axis(xticknum, yticknum);
+    traj[0] = traj1;
+    traj[1] = traj2;
 }
 
 // drag start function
@@ -380,22 +263,8 @@ function dragend_func(){
     stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
     stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
 
-    // re-draw axis
-    clear_axis();
-    draw_axis(xticknum, yticknum);
-
-    // re-draw heatmap
-    clear_heatmap();
-    dataf = generate_data(f, d);
-    draw_heatmap(dataf);
-
-    // if there are paths on heatmap, then clear and re-draw them
-    var paths = g.selectAll("path");
-    if (!paths.empty()){
-        paths.remove();
-        draw_path(traj[0], 0, "black", 2);
-        draw_path(traj[1], 0, "white", 2);
-    }
+    // refresh heatmap
+    refresh_heatmap();
 }
 
 // zoom function
@@ -420,22 +289,8 @@ function zoom_func(){
     stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
     stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
 
-    // re-draw axis
-    clear_axis();
-    draw_axis(xticknum, yticknum);
-
-    // re-draw heatmap
-    clear_heatmap();
-    dataf = generate_data(f, d);
-    draw_heatmap(dataf);
-
-    // if there are paths on heatmap, then clear and re-draw them
-    var paths = g.selectAll("path");
-    if (!paths.empty()){
-        paths.remove();
-        draw_path(traj[0], 0, "black", 2);
-        draw_path(traj[1], 0, "white", 2);
-    }
+    // refresh heatmap
+    refresh_heatmap();
 }
 
 // function to set selection icon
@@ -454,7 +309,7 @@ function set_selection_icon(choice_ids, selection_ids){
 }
 
 // function to draw optimization path
-function draw_path(traj, duration, color, stroke_width){
+function draw_path(traj, path_id, duration, color, stroke_width, visible){
     var transition = d3.transition()
                         .duration(duration)
                         .ease(d3.easeLinear);
@@ -463,10 +318,12 @@ function draw_path(traj, duration, color, stroke_width){
                         .y(function(d){ return gtosy(d[1]); })
                         .curve(d3.curveLinear);
     var path = g.append("path")
+                .attr("id", path_id)
                 .attr("d", linefunc(traj))
                 .attr("stroke", color)
                 .attr("stroke-width", stroke_width)
-                .attr("fill", "none");
+                .attr("fill", "none")
+                .style("visibility", visible? "visible" : "hidden");
     var pathlength = path.node().getTotalLength();
     path.attr("stroke-dasharray", pathlength + " " + pathlength)
         .attr("stroke-dashoffset", pathlength)
@@ -474,7 +331,76 @@ function draw_path(traj, duration, color, stroke_width){
         .attr("stroke-dashoffset", 0);
 }
 
-// set height and width 
+// function to show or hide optimization trajectory
+function show_hide_traj(idx){
+    traj_show[idx] = !traj_show[idx];
+    d3.select("#traj" + idx.toString())
+        .style("visibility", traj_show[idx]? "visible" : "hidden");
+    d3.select("#toggle" + idx.toString()).select("circle")
+        .attr("fill", traj_show[idx]? color[idx] : "white");
+}
+
+// function to reset all parameters
+function reset_params(){
+    // range of (x, y)
+    xmin = -3, xmax = 3;
+    ymin = -2, ymax = 2;
+    
+    // update axis
+    gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
+    gtosy = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]);
+    stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
+    stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
+
+    // heatmap segmentation parameter (default settings)
+    d = 100;
+
+    // axis parameter
+    xticknum = 5, yticknum = 5;
+
+    // minimum and maximum of data
+    mindata = Infinity, maxdata = -Infinity;
+
+    // drag parameters
+    drag_pos = [0, 0];
+
+    // zoom parameters
+    zoom_scale = 1;
+
+    // if cursor type is "Move", then reset zoom scale
+    if (cursor_type == "Move"){
+        var zoom = d3.zoom().scaleExtent([0.01, 100]).on("zoom", zoom_func);
+        g.call(zoom);
+        g.call(zoom.transform, d3.zoomIdentity);
+    }
+}
+
+// function to refresh heatmap
+function refresh_heatmap(){
+    // refresh axis
+    clear_axis();
+    draw_axis(xticknum, yticknum);
+
+    // refresh heatmap
+    clear_heatmap();
+    dataf = generate_data(f, d);
+    draw_heatmap(dataf);
+
+    // if there are paths on heatmap, then refresh them
+    var paths = g.selectAll("path");
+    if (!paths.empty()){
+        paths.remove();
+        for (var i = 0; i < num_opt; i++){
+            draw_path(traj[i], "traj" + i.toString(), 0, color[i], 2, traj_show[i]);
+        }
+    }
+
+    // set default cursor type to "Click"
+    if (cursor_type == null)
+        set_cursor_type("Click");
+}
+
+// set height and width of svg image
 s.attr("width", width + margin.left + margin.right).attr("height", height + margin.top + margin.bottom);
 
 // svg element group
@@ -483,17 +409,16 @@ var gs = s.append("g").attr("transform", `translate(${margin.left}, ${margin.top
 // graph element group
 var g = gs.append("svg").attr("id", "heatmap").attr("width", width + "px").attr("height", height + "px").style("overflow", "hidden");
 
-// generate data
-var dataf = generate_data(f, 100);
-
-// calculate minimum and maximum value of data
-for(var i = 0; i < xd * yd; i++){
-    mindata = Math.min(mindata, dataf[i]);
-    maxdata = Math.max(maxdata, dataf[i]);
-}
-
 // draw visualization
-draw_heatmap(dataf);
-draw_axis(xticknum, yticknum);
-set_cursor_type("Click");
+refresh_heatmap();
 
+// create "Go to origin" button
+d3.select("#canvas-body").append("embed")
+    .attr("src", "assets/images/aim1.png")
+    .attr("title", "Go to origin")
+    .style("position", "relative")
+    .style("right", "72px")
+    .style("bottom", "36px")
+    .style("width", "36px")
+    .style("height", "36px")
+    .on("click", function(){ reset_params(); refresh_heatmap(); })
