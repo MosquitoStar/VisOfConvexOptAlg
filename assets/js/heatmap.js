@@ -268,140 +268,189 @@ var traj = new Array();
 // drag parameters
 var drag_pos = [0, 0];
 
+// zoom parameters
+var zoom_scale = 1;
+
 // function to set cursor type (click or move)
 function set_cursor_type(type){
     if (type == "Click" || type.innerHTML == "Click"){
         console.log("Setting cursor type to \"Click\"");
 
-        // if cursor type is "Click" already, then quit
+        // if cursor type is "Click" already, then quit, otherwise set it to "Click"
         if (cursor_type == "Click")
             return;
-        
-        // set cursor type to "Click"
         cursor_type = "Click";
 
-        // set selection image
-        d3.select("#cursor-move").selectAll("img").remove();
-        d3.select("#cursor-click")
-            .append("img")
-            .attr("src", "assets/images/selection.png")
-            .attr("width", "30px")
-            .attr("height", "30px")
-            .style("float", "right")
-            .style("padding", "11px 10px 8px 0px");
+        // set selection icon
+        set_selection_icon(["#cursor-move", "#cursor-click"], ["#cursor-click"]);
 
         // set onclick function
-        g.on("click", function(){
-            // get coordinate of clicked point
-            var clickpos = d3.mouse(this);
-            var clickx = stogx(clickpos[0]), clicky = stogy(clickpos[1]);
+        g.on("click", click_func);
 
-            // run optimization algorithms and get optimization paths
-            var traj1 = steepest_descent(clickx, clicky);
-            var traj2 = newton(clickx, clicky);
-            
-            // clean former paths
-            g.selectAll("path").remove();
-            
-            // draw optimization paths
-            draw_path(traj1, traj1.length * 100, "black", 2);
-            draw_path(traj2, traj2.length * 40, "white", 2);
+        // set drag function to null
+        g.on(".drag", null);
 
-            // store optimization trajectories
-            traj = new Array();
-            traj.push(traj1);
-            traj.push(traj2);
-        
-            // re-draw axises
-            clear_axis();
-            draw_axis(xticknum, yticknum);
-        });
-
-        // set drag function
-        var drag = d3.drag().on("start", function(){
-            // drag start function
-            console.log("dragstart-click");
-        }).on("end", function(){
-            // drag end function
-            console.log("dragend-click");
-        }); 
-        g.call(drag);
+        // set zoom function
+        g.on(".zoom", null);
 
     }else if (type == "Move" || type.innerHTML == "Move"){
         console.log("Setting cursor type to \"Move\"");
 
-        // if cursor type is "Move" already, then quit
+        // if cursor type is "Move" already, then quit, otherwise set it to "Move"
         if (cursor_type == "Move")
             return;
-
-        // set cursor type to "Move"
         cursor_type = "Move";
 
-        // set selection image
-        d3.select("#cursor-click").selectAll("img").remove();
-        d3.select("#cursor-move")
-            .append("img")
+        // set selection icon
+        set_selection_icon(["#cursor-move", "#cursor-click"], ["#cursor-move"]);
+        
+        // set onclick function to null
+        g.on(".click", null);
+
+        // set drag function
+        var drag = d3.drag().on("start", dragstart_func).on("end", dragend_func);
+        g.call(drag);
+
+        // set zoom function
+        var zoom = d3.zoom().scaleExtent([0.01, 100]).on("zoom", zoom_func);
+        g.call(zoom);
+    }
+}
+
+// click function to start optimization on the clicked point
+function click_func(){
+    // get coordinate of clicked point
+    var clickpos = d3.mouse(document.getElementById("heatmap"));
+    var clickx = stogx(clickpos[0]), clicky = stogy(clickpos[1]);
+
+    // run optimization algorithms and get optimization paths
+    var traj1 = steepest_descent(clickx, clicky);
+    var traj2 = newton(clickx, clicky);
+    
+    // clean former paths
+    g.selectAll("path").remove();
+    
+    // draw optimization paths
+    draw_path(traj1, traj1.length * 100, "black", 2);
+    draw_path(traj2, traj2.length * 40, "white", 2);
+
+    // store optimization trajectories
+    traj = new Array();
+    traj.push(traj1);
+    traj.push(traj2);
+
+    // re-draw axises
+    clear_axis();
+    draw_axis(xticknum, yticknum);
+}
+
+// drag start function
+function dragstart_func(){
+    drag_pos[0] = d3.event.x;
+    drag_pos[1] = d3.event.y;
+}
+
+// drag function (test)
+function drag_func(){
+    console.log(d3.event.dx, d3.event.dy);
+    console.log(d3.event.subject);
+    console.log(d3.event.x, d3.event.y);
+}
+
+// drag end function
+function dragend_func(){
+    // get mouse move coordinate
+    var delta_mousex = d3.event.x - drag_pos[0];
+    var delta_mousey = d3.event.y - drag_pos[1];
+
+    // calculate delta x, y coordinates
+    var deltax = (xmax - xmin) * delta_mousex / width;
+    var deltay = (ymax - ymin) * delta_mousey / height;
+
+    // shift window
+    var movespeed = 0.8;
+    xmax -= deltax * movespeed;
+    xmin -= deltax * movespeed;
+    ymax += deltay * movespeed;
+    ymin += deltay * movespeed;
+
+    // update axis
+    gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
+    gtosy = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]);
+    stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
+    stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
+
+    // re-draw axis
+    clear_axis();
+    draw_axis(xticknum, yticknum);
+
+    // re-draw heatmap
+    clear_heatmap();
+    dataf = generate_data(f, d);
+    draw_heatmap(dataf);
+
+    // if there are paths on heatmap, then clear and re-draw them
+    var paths = g.selectAll("path");
+    if (!paths.empty()){
+        paths.remove();
+        draw_path(traj[0], 0, "black", 2);
+        draw_path(traj[1], 0, "white", 2);
+    }
+}
+
+// zoom function
+function zoom_func(){
+    // get zoom scale
+    var prev_scale = zoom_scale;
+    zoom_scale = 1 / d3.event.transform.k;
+
+    // get mouse position, regard it as zoom center
+    var mousepos = d3.mouse(document.getElementById("heatmap"));
+    var zoom_center_x = stogx(mousepos[0]), zoom_center_y = stogy(mousepos[1]);
+
+    // scale window
+    xmax = zoom_center_x + zoom_scale / prev_scale * (xmax - zoom_center_x);
+    ymax = zoom_center_y + zoom_scale / prev_scale * (ymax - zoom_center_y);
+    xmin = zoom_center_x + zoom_scale / prev_scale * (xmin - zoom_center_x);
+    ymin = zoom_center_y + zoom_scale / prev_scale * (ymin - zoom_center_y);
+
+    // update axis
+    gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
+    gtosy = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]);
+    stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
+    stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
+
+    // re-draw axis
+    clear_axis();
+    draw_axis(xticknum, yticknum);
+
+    // re-draw heatmap
+    clear_heatmap();
+    dataf = generate_data(f, d);
+    draw_heatmap(dataf);
+
+    // if there are paths on heatmap, then clear and re-draw them
+    var paths = g.selectAll("path");
+    if (!paths.empty()){
+        paths.remove();
+        draw_path(traj[0], 0, "black", 2);
+        draw_path(traj[1], 0, "white", 2);
+    }
+}
+
+// function to set selection icon
+function set_selection_icon(choice_ids, selection_ids){
+    choice_ids.forEach(id => {
+        d3.select(id).selectAll("img").remove();
+    });
+    selection_ids.forEach(id => {
+        d3.select(id).append("img")
             .attr("src", "assets/images/selection.png")
             .attr("width", "30px")
             .attr("height", "30px")
             .style("float", "right")
             .style("padding", "11px 10px 8px 0px");
-        
-        // set onclick function
-        g.on("click", function(){
-            console.log("move");
-        })
-
-        // set drag function
-        var drag = d3.drag().on("start", function(){
-            // drag start function
-            console.log("dragstart-move");
-            var clickpos = d3.mouse(this);
-            drag_pos[0] = clickpos[0];
-            drag_pos[1] = clickpos[1];
-        }).on("end", function(){
-            console.log("dragend-move");
-            // get mouse move coordinate
-            var mousepos = d3.mouse(this);
-            var delta_mousex = mousepos[0] - drag_pos[0];
-            var delta_mousey = mousepos[1] - drag_pos[1];
-
-            // calculate delta x, y coordinates
-            var deltax = (xmax - xmin) * delta_mousex / width;
-            var deltay = (ymax - ymin) * delta_mousey / height;
-
-            // shift window
-            var movespeed = 0.8;
-            xmax -= deltax * movespeed;
-            xmin -= deltax * movespeed;
-            ymax += deltay * movespeed;
-            ymin += deltay * movespeed;
-
-            // update axis
-            gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
-            gtosy = d3.scaleLinear().domain([ymin, ymax]).range([height, 0]);
-            stogx = d3.scaleLinear().domain([0, width]).range([xmin, xmax]);
-            stogy = d3.scaleLinear().domain([height, 0]).range([ymin, ymax]);
-
-            // re-draw axis
-            clear_axis();
-            draw_axis(xticknum, yticknum);
-
-            // re-draw heatmap
-            clear_heatmap();
-            dataf = generate_data(f, d);
-            draw_heatmap(dataf);
-
-            // if there are paths on heatmap, then clear and re-draw them
-            var paths = g.selectAll("path");
-            if (!paths.empty()){
-                paths.remove();
-                draw_path(traj[0], 0, "black", 2);
-                draw_path(traj[1], 0, "white", 2);
-            }
-        })
-        g.call(drag);
-    }
+    })
 }
 
 // function to draw optimization path
@@ -432,7 +481,7 @@ s.attr("width", width + margin.left + margin.right).attr("height", height + marg
 var gs = s.append("g").attr("transform", `translate(${margin.left}, ${margin.top})`);
 
 // graph element group
-var g = gs.append("svg").attr("width", width + "px").attr("height", height + "px").style("overflow", "hidden");
+var g = gs.append("svg").attr("id", "heatmap").attr("width", width + "px").attr("height", height + "px").style("overflow", "hidden");
 
 // generate data
 var dataf = generate_data(f, 100);
