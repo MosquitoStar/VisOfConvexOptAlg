@@ -6,8 +6,8 @@ const margin = {top: 10, right: 30, bottom: 30, left: 30};
 var s = d3.select("#canvas-body").append("svg");
 
 // range of (x, y)
-var xmin = -3, xmax = 3;
-var ymin = -2, ymax = 2;
+var xmin = -4.5, xmax = 4.5;
+var ymin = -3, ymax = 3;
 
 // heatmap segmentation parameter (default settings)
 var d = 100;
@@ -24,6 +24,9 @@ var mindata = Infinity, maxdata = -Infinity;
 
 // cursor type
 var cursor_type = null;
+
+// objective function id
+var obj_func_id = null;
 
 // number of optimization algorithms
 var num_opt = 2;
@@ -216,7 +219,7 @@ function click_func(){
     var traj2 = newton(clickx, clicky);
     
     // clean former paths
-    g.selectAll("path").remove();
+    clear_paths();
     
     // draw optimization paths
     draw_path(traj1, "traj0", traj1.length * 100, color[0], 2, traj_show[0]);
@@ -265,6 +268,11 @@ function dragend_func(){
 
     // refresh heatmap
     refresh_heatmap();
+
+    // if the window has been moved, then set "Go to origin" button
+    if (deltax != 0 || deltay != 0){
+        set_gto_btn("to_origin");
+    }
 }
 
 // zoom function
@@ -291,6 +299,11 @@ function zoom_func(){
 
     // refresh heatmap
     refresh_heatmap();
+
+    // if the window has been scaled, then set "Go to origin" button
+    if (zoom_scale != 1){
+        set_gto_btn("to_origin");
+    }
 }
 
 // function to set selection icon
@@ -331,6 +344,11 @@ function draw_path(traj, path_id, duration, color, stroke_width, visible){
         .attr("stroke-dashoffset", 0);
 }
 
+// function to clear paths
+function clear_paths(){
+    g.selectAll("path").remove();
+}
+
 // function to show or hide optimization trajectory
 function show_hide_traj(idx){
     traj_show[idx] = !traj_show[idx];
@@ -343,8 +361,8 @@ function show_hide_traj(idx){
 // function to reset all parameters
 function reset_params(){
     // range of (x, y)
-    xmin = -3, xmax = 3;
-    ymin = -2, ymax = 2;
+    xmin = -4.5, xmax = 4.5;
+    ymin = -3, ymax = 3;
     
     // update axis
     gtosx = d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
@@ -398,6 +416,49 @@ function refresh_heatmap(){
     // set default cursor type to "Click"
     if (cursor_type == null)
         set_cursor_type("Click");
+
+    // set default objective function to function 1
+    if (obj_func_id == null)
+        set_obj_func(1);
+}
+
+// function to set "Go to origin" button
+function set_gto_btn(status){
+    var gto_btn = d3.select("#gto-btn");
+    var transition = d3.transition().duration(100).ease(d3.easeLinear);
+    if (status == "at_origin"){
+        gto_btn.attr("src", "assets/images/to-origin.png").transition(transition).attr("src", "assets/images/at-origin.png");
+    }
+    else if (status == "to_origin"){
+        gto_btn.attr("src", "assets/images/at-origin.png").transition(transition).attr("src", "assets/images/to-origin.png");
+    }
+}
+
+// function to change optimization objective function
+function set_obj_func(func_id){
+    if (obj_func_id == func_id)
+        return;
+    obj_func_id = func_id;
+    if (func_id == 1){
+        f = t7f;
+        f_grad = t7f_grad;
+        f_hessian = t7f_hessian;
+        set_selection_icon(["#function1", "#function2", "#function3"], ["#function1"]);
+    }
+    else if (func_id == 2){
+        f = qb;
+        f_grad = qb_grad;
+        f_hessian = qb_hessian;
+        set_selection_icon(["#function1", "#function2", "#function3"], ["#function2"]);
+    }
+    else if (func_id == 3){
+        f = Himmelblau;
+        f_grad = Himmelblau_grad;
+        f_hessian = Himmelblau_hessian;
+        set_selection_icon(["#function1", "#function2", "#function3"], ["#function3"]);
+    }
+    refresh_heatmap();
+    clear_paths();
 }
 
 // set height and width of svg image
@@ -414,11 +475,12 @@ refresh_heatmap();
 
 // create "Go to origin" button
 d3.select("#canvas-body").append("embed")
-    .attr("src", "assets/images/aim1.png")
+    .attr("id", "gto-btn")
+    .attr("src", "assets/images/at-origin.png")
     .attr("title", "Go to origin")
     .style("position", "relative")
     .style("right", "72px")
     .style("bottom", "36px")
     .style("width", "36px")
     .style("height", "36px")
-    .on("click", function(){ reset_params(); refresh_heatmap(); })
+    .on("click", function(){ reset_params(); refresh_heatmap(); set_gto_btn("at_origin"); })

@@ -17,7 +17,7 @@
         <div id="toolboxBg" class="bg-rect"></div>
         <ul id="stb-list" class="stb-ul">
             <li>
-                <a href="javascript:void(0)" onclick="toobox_func()" class="sidetoolbtn">
+                <a href="javascript:void(0)" onclick="toobox_func()" class="sidetoolbtn" title="Press ` to open tool bar">
                     <img src="assets/images/settings.png" height="40px" width="40px"></img>
                 </a>
             </li>
@@ -31,9 +31,9 @@
             <li class="stb-li">
                 <a href="#" class="toolbtn">Function</a>
                 <ul class="stb-sub-ul">
-                    <li class="stb-sub-li"><a href="#">Function 1</a></li>
-                    <li class="stb-sub-li"><a href="#">Function 2</a></li>
-                    <li class="stb-sub-li"><a href="#">Function 3</a></li>
+                    <li id="function1" class="stb-sub-li"><a href="#" onclick="set_obj_func(1)">Function 1</a></li>
+                    <li id="function2" class="stb-sub-li"><a href="#" onclick="set_obj_func(2)">Function 2</a></li>
+                    <li id="function3" class="stb-sub-li"><a href="#" onclick="set_obj_func(3)">Function 3</a></li>
                 </ul>
             </li>
             <li class="stb-li">
@@ -114,7 +114,7 @@
         function open_toolbox() {
             bg.style("width", "200px");
             main.style("margin-left", "120px");
-            tb_btn.select("img").attr("src", "assets/images/close.png");
+            tb_btn.select("img").attr("src", "assets/images/close.png").attr("title", "Press ` to close tool bar");
             setTimeout(function(){ tool.style("visibility", "visible"); }, 360);
             isNavOpen = true;
         }
@@ -123,7 +123,7 @@
             tool.style("visibility", "hidden");
             bg.style("width", "80px");
             main.style("margin-left", "0px");
-            tb_btn.select("img").attr("src", "assets/images/settings.png");
+            tb_btn.select("img").attr("src", "assets/images/settings.png").attr("title", "Press ` to open tool bar");
             
             isNavOpen = false;
         }
