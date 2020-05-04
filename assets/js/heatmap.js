@@ -28,6 +28,15 @@ var cursor_type = null;
 // objective function id
 var obj_func_id = null;
 
+// desciption for optimization functions
+const des_img = ["assets/images/tutorial7_func.png", "assets/images/quadratic_bowl.png", "assets/images/Himmelblau.png"];
+const des_title = ["Function 1", "Function 2", "Function 3"];
+const des_cap = [" The function in tutorial 7", " Quadratic bowl function", " Himmelblau's function"];
+const des_func = ["$$f(x,y)=\\frac{1}{2}(x^2+2y^2)$$", "$$f(x,y)=x^2+y^2-16e^{-\\frac{(x-3)^2+y^2}{1.2}}-20e^{-\\frac{(x+3)^2+y^2}{2}}$$", "$$f(x,y)=(x^2+y-11)^2+(x+y^2-7)^2$$"];
+const des_text = ["\tFunction 1 is the objective function from Tutorial 7. It is a very simple one with only one optimal: $$f(0,0)=0$$", 
+                  "\tFunction 2 is basically a quadratic \"bowl\" subtracting two gaussians. It has two local minimas, the one on the left is also the global minima.", 
+                  "\tFunction 3 is Himmelblau's function, a common function for testing optimization algorithms. It has 1 local maximum at x=-0.270845 and y=-0.923039 and 4 local minimas: $$f(3,2)=0,$$ $$f(-2.81,3.13)=0,$$ $$f(-3.78,-3.28)=0,$$ $$f(3.58,-1.85)=0$$"];
+
 // number of optimization algorithms
 var num_opt = 2;
 
@@ -223,7 +232,7 @@ function click_func(){
     
     // draw optimization paths
     draw_path(traj1, "traj0", traj1.length * 100, color[0], 2, traj_show[0]);
-    draw_path(traj2, "traj1", traj2.length * 40, color[1], 2, traj_show[1]);
+    draw_path(traj2, "traj1", traj2.length * 100, color[1], 2, traj_show[1]);
 
     // store optimization trajectories
     traj[0] = traj1;
@@ -269,9 +278,9 @@ function dragend_func(){
     // refresh heatmap
     refresh_heatmap();
 
-    // if the window has been moved, then set "Go to origin" button
+    // if the window has been moved, then set reset button
     if (deltax != 0 || deltay != 0){
-        set_gto_btn("to_origin");
+        set_reset_btn("to_origin");
     }
 }
 
@@ -300,9 +309,9 @@ function zoom_func(){
     // refresh heatmap
     refresh_heatmap();
 
-    // if the window has been scaled, then set "Go to origin" button
+    // if the window has been scaled, then set reset button
     if (zoom_scale != 1){
-        set_gto_btn("to_origin");
+        set_reset_btn("to_origin");
     }
 }
 
@@ -422,9 +431,9 @@ function refresh_heatmap(){
         set_obj_func(1);
 }
 
-// function to set "Go to origin" button
-function set_gto_btn(status){
-    var gto_btn = d3.select("#gto-btn");
+// function to set reset button
+function set_reset_btn(status){
+    var gto_btn = d3.select("#reset-btn");
     var transition = d3.transition().duration(100).ease(d3.easeLinear);
     if (status == "at_origin"){
         gto_btn.attr("src", "assets/images/to-origin.png").transition(transition).attr("src", "assets/images/at-origin.png");
@@ -432,6 +441,17 @@ function set_gto_btn(status){
     else if (status == "to_origin"){
         gto_btn.attr("src", "assets/images/at-origin.png").transition(transition).attr("src", "assets/images/to-origin.png");
     }
+}
+
+// function to set desciption
+function set_description(func_id){
+    var func_idx = func_id - 1;
+    d3.select("#description-title").html(des_title[func_idx]);
+    d3.select("#desciption-image-cap").text(des_cap[func_idx]);
+    d3.select("#description-func").text(des_func[func_idx]);
+    d3.select("#description-text").text(des_text[func_idx]);
+    d3.select("#description-image").attr("src", des_img[func_idx]);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
 }
 
 // function to change optimization objective function
@@ -457,6 +477,7 @@ function set_obj_func(func_id){
         f_hessian = Himmelblau_hessian;
         set_selection_icon(["#function1", "#function2", "#function3"], ["#function3"]);
     }
+    set_description(func_id);
     refresh_heatmap();
     clear_paths();
 }
@@ -470,17 +491,17 @@ var gs = s.append("g").attr("transform", `translate(${margin.left}, ${margin.top
 // graph element group
 var g = gs.append("svg").attr("id", "heatmap").attr("width", width + "px").attr("height", height + "px").style("overflow", "hidden");
 
-// draw visualization
-refresh_heatmap();
-
-// create "Go to origin" button
+// create reset button
 d3.select("#canvas-body").append("embed")
-    .attr("id", "gto-btn")
+    .attr("id", "reset-btn")
     .attr("src", "assets/images/at-origin.png")
-    .attr("title", "Go to origin")
+    .attr("title", "Reset")
     .style("position", "relative")
     .style("right", "72px")
     .style("bottom", "36px")
     .style("width", "36px")
     .style("height", "36px")
-    .on("click", function(){ reset_params(); refresh_heatmap(); set_gto_btn("at_origin"); })
+    .on("click", function(){ reset_params(); refresh_heatmap(); set_reset_btn("at_origin"); })
+
+// draw visualization
+refresh_heatmap();

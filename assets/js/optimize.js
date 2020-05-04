@@ -79,16 +79,7 @@ function steepest_descent(x, y){
         var gradient = f_grad(curx, cury);
         var deltax = -gradient[0];
         var deltay = -gradient[1];
-        // linear seach for best t
-        var search_times = 99;
-        var minf = Infinity;
-        var t, deltat = 0.01;
-        for (var i = 0, tmp = deltat; i < search_times; i++, tmp += deltat){
-            if (f(curx + tmp * deltax, cury + tmp * deltay) < minf){
-                minf = f(curx + tmp * deltax, cury + tmp * deltay);
-                t = tmp;
-            }
-        }
+        var t = bt_line_search(curx, cury, deltax, deltay, 0.49, 0.95);
         curx += t * deltax;
         cury += t * deltay;
         traj.push([curx, cury]);
@@ -104,7 +95,7 @@ function steepest_descent(x, y){
 // Newton method
 function newton(x, y){
     var epsilon = 0.0001;
-    var maxiter = 100000;
+    var maxiter = 1000;
     var numiter = 1;
     var curx = x, cury = y;
     var traj = new Array(); 
@@ -114,13 +105,16 @@ function newton(x, y){
         var g = f_grad(curx, cury);
         var deltax = -H_inv[0][0] * g[0] - H_inv[0][1] * g[1];
         var deltay = -H_inv[1][0] * g[0] - H_inv[1][1] * g[1];
-        // console.log("(x,y)=", curx, cury);
-        // console.log("H=", f_hessian(curx, cury));
-        // console.log("H-1=", H_inv);
-        // console.log("|H|=", det(f_hessian(curx, cury)));
-        // console.log("g=", g)
-        // console.log("delta=", deltax, deltay);
         var t = 0.2;
+        var search_times = 99;
+        var minf = Infinity;
+        var t, deltat = 0.01;
+        for (var i = 0, tmp = deltat; i < search_times; i++, tmp += deltat){
+            if (f(curx + tmp * deltax, cury + tmp * deltay) < minf){
+                minf = f(curx + tmp * deltax, cury + tmp * deltay);
+                t = tmp;
+            }
+        }
         curx += t * deltax;
         cury += t * deltay;
         traj.push([curx, cury]);
@@ -131,6 +125,15 @@ function newton(x, y){
         numiter++;
     }
     return traj;
+}
+
+// backtracking line search
+function bt_line_search(x, y, dx, dy, alpha, beta){
+    var t = 1;
+    while(f(x, y) - f(x + t * dx, y + t * dy) < alpha * Math.abs(f_grad(x, y)[0] * t * dx + f_grad(x, y)[1] * t * dy)){
+        t = beta * t;
+    }
+    return t;
 }
 
 // calculate matrix H's determinant

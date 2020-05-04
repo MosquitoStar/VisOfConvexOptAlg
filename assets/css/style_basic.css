@@ -8,6 +8,7 @@ body {
     background-color: #fff; 
     transition: background-color .5s;
     margin-left: 80px;
+    margin-right: 300px;
 }
 
 .canvas {
@@ -139,4 +140,18 @@ body {
 .coord-table td {
     width: 120px;
     font-size: 10px;
+}
+
+.description {
+    height: 100%;
+    width: 400px;
+    position: fixed;
+    /*z-index、top、left共同控制侧栏的悬浮（上方1，下方-1）*/
+    z-index: 1;
+    top: 0;
+    right: 0;
+    border: black;
+    border-width: 10px;
+    background-color: none;
+    text-align: center;
 }

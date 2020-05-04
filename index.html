@@ -39,8 +39,8 @@
             <li class="stb-li">
                 <a href="#" class="toolbtn">Algorithm</a>
                 <ul class="stb-sub-ul">
-                    <li class="stb-sub-li"><a href="#">Steepest Descent</a></li>
-                    <li class="stb-sub-li"><a href="#">Newton Method</a></li>
+                    <li class="stb-sub-li"><a href="https://en.wikipedia.org/wiki/Gradient_descent">Steepest Descent</a></li>
+                    <li class="stb-sub-li"><a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton Method</a></li>
                 </ul>
             </li>
             <li class="stb-li">
@@ -52,7 +52,8 @@
         </ul>
     </div>
     <!-- Side toolbox ends -->
-       
+     
+    <!-- Main content starts -->
     <div id="main">
 
         <!-- Visualization content starts -->
@@ -85,10 +86,30 @@
         <!-- Visualization content ends -->
 
     </div>
+    <!-- Main content ends -->
+
+    <div class="description">
+        <h2 id="description-title">Function 1</h2>
+        <hr style="FILTER:alpha(opacity=100,finishopacity=0,style=3)" width="80%"color=black SIZE=3></hr>
+        <br/>
+        <img id="description-image" src="assets/images/tutorial7_func.png" width="240"></img>
+        <p style="font-size: smaller;"><b>Fig.</b><span id="desciption-image-cap">&nbsp;The function in tutorial 7</span></p>
+        <p id="description-func">$$f(x,y)=\frac{1}{2}(x^2+2y^2)$$</p>
+        <p style="text-align: left; padding: 0px 45px;"><span>&emsp;</span><span id="description-text">Function 1 is the objective function from Tutorial 7. It is a very simple one with only one optimal: $$f(0,0)=0$$</span></p>
+    </div>
     
     <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
     <!-- use local d3.js script file -->
     <script src="d3/d3.min.js"></script> 
+
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {inlineMath: [['$','$'], ['\(','\)']]},
+            "HTML-CSS": { linebreaks: { automatic: true } },
+            SVG: { linebreaks: { automatic: true } }
+        });
+    </script>
 
     <script src="assets/js/optimize.js"></script>
     <script src="assets/js/heatmap.js"></script>
